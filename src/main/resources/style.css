@@ -1,0 +1,29 @@
+.root {
+    -fx-background-color: #121212; /* Fundo escuro tipo Spotify */
+}
+
+.main-container {
+    -fx-padding: 40;
+    -fx-alignment: center;
+}
+
+.song-label {
+    -fx-text-fill: #FFFFFF;
+    -fx-font-size: 22px;
+    -fx-font-family: "Segoe UI", Helvetica, Arial;
+    -fx-font-weight: bold;
+    -fx-text-alignment: center;
+}
+
+.status-label {
+    -fx-text-fill: #B3B3B3;
+    -fx-font-size: 14px;
+    -fx-font-family: "Segoe UI";
+}
+
+.card {
+    -fx-background-color: #1E1E1E;
+    -fx-background-radius: 15;
+    -fx-padding: 30;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 10, 0, 0, 5);
+}
