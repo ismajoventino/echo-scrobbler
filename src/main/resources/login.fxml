@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Button?>
+
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.echoscrobbler.controller.LoginController"
+      styleClass="login-root"
+      alignment="CENTER"
+      spacing="0"
+      fillWidth="true">
+
+    <!-- Top spacer -->
+    <VBox VBox.vgrow="ALWAYS"/>
+
+    <!-- Center card -->
+    <VBox styleClass="login-card" alignment="CENTER" spacing="0">
+
+        <!-- Logo mark -->
+        <HBox alignment="CENTER" styleClass="logo-mark-wrap">
+            <VBox styleClass="logo-mark" alignment="CENTER">
+                <Label text="◈" styleClass="logo-glyph"/>
+            </VBox>
+        </HBox>
+
+        <!-- App name -->
+        <Label text="Echo" styleClass="login-wordmark"/>
+        <Label text="SCROBBLER" styleClass="login-wordmark-sub"/>
+
+        <!-- Tagline -->
+        <Label text="your music, remembered." styleClass="login-tagline"/>
+
+        <!-- Spacer -->
+        <VBox minHeight="32"/>
+
+        <!-- Button -->
+        <HBox alignment="CENTER">
+            <Button fx:id="loginButton"
+                    text="Connect with Last.fm"
+                    onAction="#handleLogin"
+                    styleClass="login-btn"/>
+        </HBox>
+
+        <!-- Status -->
+        <Label fx:id="statusLabel" text="" styleClass="login-status"/>
+
+    </VBox>
+
+    <!-- Bottom spacer -->
+    <VBox VBox.vgrow="ALWAYS"/>
+
+    <!-- Footer -->
+    <Label text="for linux · built with java" styleClass="login-footer"/>
+
+</VBox>

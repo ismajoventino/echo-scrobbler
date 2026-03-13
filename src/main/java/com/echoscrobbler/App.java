@@ -1,109 +1,152 @@
 package com.echoscrobbler;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
-import javafx.application.Application;
-import javafx.geometry.Pos;
-import javafx.scene.Scene;
-import javafx.scene.control.Label;
-import javafx.scene.layout.VBox;
-import javafx.stage.Stage;
-import javafx.util.Duration;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
+import com.echoscrobbler.controller.DashboardController;
+import com.echoscrobbler.controller.LoginController;
+import com.echoscrobbler.model.Track;
+import com.echoscrobbler.service.AuthService;
+import com.echoscrobbler.service.LastFmClient;
+import com.echoscrobbler.service.LastFmService;
+import com.echoscrobbler.service.ScrobbleTimer;
+
+import io.github.cdimascio.dotenv.Dotenv;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.application.Application;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Scene;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+import javafx.util.Duration;
+
 public class App extends Application {
 
-    private Label nowPlayingLabel;
-    private Label statusLabel;
-    
     private LastFmClient lastFmClient;
-    private String lastDetectedTrack = "";
-    
-    private long trackStartTime = 0;
-    private long secondsListened = 0;
-    private boolean scrobbleSent = false;
-    private double scrobbleThreshold = 0.5;
+    private Track currentTrack;
+    private final ScrobbleTimer scrobbleTimer = new ScrobbleTimer();
+    private AuthService authService;
 
     @Override
     public void start(Stage primaryStage) {
-        lastFmClient = new LastFmClient();
+        Dotenv dotenv = Dotenv.load();
+        authService = new AuthService(dotenv.get("LASTFM_API_KEY"), dotenv.get("LASTFM_SHARED_SECRET"));
+        lastFmClient = new LastFmClient(authService.getSessionKey());
 
-        nowPlayingLabel = new Label("Waiting for music...");
-        nowPlayingLabel.getStyleClass().add("song-label");
-        
-        statusLabel = new Label("Status: Idle");
-        statusLabel.getStyleClass().add("status-label");
+        if (authService.isAuthenticated()) {
+            showDashboard(primaryStage);
+        } else {
+            showLogin(primaryStage);
+        }
+    }
 
-        VBox card = new VBox(15);
-        card.getStyleClass().add("card");
-        card.setAlignment(Pos.CENTER);
-        card.getChildren().addAll(nowPlayingLabel, statusLabel);
+    private void showLogin(Stage stage) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/login.fxml"));
+            VBox root = loader.load();
 
-        VBox root = new VBox();
-        root.getStyleClass().add("main-container");
-        root.getChildren().add(card);
+            LoginController controller = loader.getController();
+            controller.setAuthService(authService);
+            controller.setOnLoginSuccess(() -> showDashboard(stage));
 
-        Scene scene = new Scene(root, 450, 350);
-        scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+            Scene scene = new Scene(root, 480, 580);
+            scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+            stage.setScene(scene);
+            stage.show();
+        } catch (Exception e) {
+            System.out.println("Login error: " + e.getMessage());
+        }
+    }
 
-        primaryStage.setTitle("Echo Scrobbler");
-        primaryStage.setScene(scene);
-        primaryStage.show();
+    private void showDashboard(Stage stage) {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/dashboard.fxml"));
+            VBox root = loader.load();
 
-        // 1-second interval for tracking logic
-        Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> updateLogic()));
-        timeline.setCycleCount(Timeline.INDEFINITE);
-        timeline.play();
+            Dotenv dotenv = Dotenv.load();
+            LastFmService lastFmService = new LastFmService(
+                dotenv.get("LASTFM_API_KEY"),
+                authService.getSessionKey(),
+                authService.getUsername()
+            );
+
+            DashboardController controller = loader.getController();
+            controller.init(lastFmService, authService);
+
+            Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> updateLogic()));
+            timeline.setCycleCount(Timeline.INDEFINITE);
+            timeline.play();
+
+            Scene scene = new Scene(root);
+            scene.getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+            stage.setTitle("Echo Scrobbler");
+            stage.setScene(scene);
+            stage.setWidth(480);
+            stage.setHeight(680);
+            stage.setResizable(false);
+            stage.show();
+        } catch (Exception e) {
+            System.out.println("Dashboard error: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     private void updateLogic() {
         try {
-            ProcessBuilder builder = new ProcessBuilder("playerctl", "metadata", "--format", 
-                "{{ artist }}|||{{ title }}|||{{ album }}");
+            ProcessBuilder builder = new ProcessBuilder("playerctl", "metadata", "--format",
+                "{{ status }}|||{{ artist }}|||{{ title }}|||{{ album }}|||{{ mpris:length }}");
             Process process = builder.start();
             BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             String rawLine = reader.readLine();
 
             if (rawLine != null && !rawLine.trim().isEmpty()) {
                 String[] parts = rawLine.split("\\|\\|\\|");
-                String artist = parts[0].trim();
-                String title = parts[1].trim();
-                String album = parts.length > 2 ? parts[2].trim() : "Unknown Album";
-
-                // New track detection
-                if (!rawLine.equals(lastDetectedTrack)) {
-                    lastDetectedTrack = rawLine;
-                    trackStartTime = System.currentTimeMillis() / 1000;
-                    secondsListened = 0;
-                    scrobbleSent = false;
-                    
-                    nowPlayingLabel.setText(artist + "\n" + title);
-                    lastFmClient.updateNowPlaying(artist, title, album);
-                    System.out.println("Now Playing: " + title);
+                String status = parts[0].trim();
+                String artist = parts[1].trim();
+                String title  = parts[2].trim();
+                String album  = parts.length > 3 ? parts[3].trim() : "";
+                long durationSeconds = 0;
+                if (parts.length > 4 && !parts[4].trim().isEmpty()) {
+                    long raw = Long.parseLong(parts[4].trim());
+                    if (raw > 0 && raw < 3_600_000_000L) {
+                        durationSeconds = raw / 1_000_000;
+                    }
                 }
 
-                secondsListened++;
-                
-                // Scrobble trigger (standard 90s target)
-                int scrobbleTarget = 90; 
+                if (status.equals("Paused")) {
+                    scrobbleTimer.cancel();
+                    return;
+                }
 
-                if (!scrobbleSent && secondsListened >= scrobbleTarget) {
-                    lastFmClient.scrobble(artist, title, album, trackStartTime);
-                    scrobbleSent = true;
-                    statusLabel.setText("Scrobbled!");
-                    System.out.println("Scrobble sent: " + title);
-                } else if (!scrobbleSent) {
-                    statusLabel.setText("Listening: " + secondsListened + "s / Target: " + scrobbleTarget + "s");
+                String trackId = artist + "|||" + title;
+                if (currentTrack == null || !trackId.equals(currentTrack.getArtist() + "|||" + currentTrack.getTitle())) {
+                    currentTrack = new Track(artist, title, album, durationSeconds);
+                    lastFmClient.updateNowPlaying(artist, title, album);
+
+                    Track trackRef = currentTrack;
+                    scrobbleTimer.start(currentTrack, () -> {
+                        boolean success = lastFmClient.scrobble(
+                            trackRef.getArtist(), trackRef.getTitle(),
+                            trackRef.getAlbum(), trackRef.getStartTimestamp()
+                        );
+                        System.out.println("Scrobble [" + trackRef.getTitle() + "] success: " + success);
+                    });
                 }
 
             } else {
-                nowPlayingLabel.setText("No Media Detected");
-                statusLabel.setText("Status: Idle");
+                scrobbleTimer.cancel();
+                currentTrack = null;
             }
+
         } catch (Exception e) {
-            
+            System.out.println("Error: " + e.getMessage());
         }
+    }
+
+    @Override
+    public void stop() {
+        scrobbleTimer.shutdown();
     }
 
     public static void main(String[] args) {

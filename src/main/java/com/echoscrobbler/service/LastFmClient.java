@@ -1,4 +1,4 @@
-package com.echoscrobbler;
+package com.echoscrobbler.service;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import java.net.URI;
@@ -19,11 +19,11 @@ public class LastFmClient {
     private final String sessionKey;
     private final HttpClient httpClient;
 
-    public LastFmClient() {
+    public LastFmClient(String sessionKey) {
         Dotenv dotenv = Dotenv.load();
         this.apiKey = dotenv.get("LASTFM_API_KEY");
         this.sharedSecret = dotenv.get("LASTFM_SHARED_SECRET");
-        this.sessionKey = dotenv.get("LASTFM_SESSION_KEY");
+        this.sessionKey = sessionKey;
         this.httpClient = HttpClient.newHttpClient();
     }
 
@@ -31,12 +31,12 @@ public class LastFmClient {
         sendRequest("track.updateNowPlaying", artist, track, album, null);
     }
 
-    public void scrobble(String artist, String track, String album, long timestamp) {
-        sendRequest("track.scrobble", artist, track, album, String.valueOf(timestamp));
+    public boolean scrobble(String artist, String track, String album, long timestamp) {
+        return sendRequest("track.scrobble", artist, track, album, String.valueOf(timestamp));
     }
 
-    private void sendRequest(String method, String artist, String track, String album, String timestamp) {
-        if (this.apiKey == null || this.sessionKey == null) return;
+    private boolean sendRequest(String method, String artist, String track, String album, String timestamp) {
+        if (this.apiKey == null || this.sessionKey == null) return false;
 
         try {
             Map<String, String> params = new TreeMap<>();
@@ -64,9 +64,11 @@ public class LastFmClient {
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             System.out.println("API [" + method + "] response: " + response.body());
+            return response.body().contains("\"status\":\"ok\"");
 
         } catch (Exception e) {
             System.out.println("API Error: " + e.getMessage());
+            return false;
         }
     }
 

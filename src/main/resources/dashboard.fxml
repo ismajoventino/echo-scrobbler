@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.shape.*?>
+
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.echoscrobbler.controller.DashboardController"
+      styleClass="app-root"
+      spacing="0">
+
+    <!-- ═══ HEADER ═══ -->
+    <HBox styleClass="header" alignment="CENTER_LEFT">
+        <Label text="Echo Scrobbler" styleClass="wordmark"/>
+        <HBox HBox.hgrow="ALWAYS"/>
+        <HBox fx:id="profileLink" styleClass="profile-link" alignment="CENTER_LEFT" spacing="5"
+              onMouseClicked="#openProfile">
+            <Label fx:id="usernameLabel" styleClass="profile-link-text" text="—"/>
+            <Label styleClass="profile-link-arrow" text="↗"/>
+        </HBox>
+    </HBox>
+
+    <HBox styleClass="divider-full"/>
+
+    <!-- ═══ CONTENT ═══ -->
+    <ScrollPane styleClass="content-scroll" fitToWidth="true" VBox.vgrow="ALWAYS">
+        <VBox styleClass="content-area" spacing="0">
+
+            <!-- ── Now Playing ── -->
+            <VBox styleClass="now-playing" alignment="CENTER" spacing="16">
+
+                <!-- Album art -->
+                <StackPane styleClass="artwork-wrap">
+                    <VBox fx:id="artworkPlaceholder" styleClass="artwork-placeholder" alignment="CENTER"/>
+                    <ImageView fx:id="albumArtImage"
+                               fitWidth="120" fitHeight="120"
+                               preserveRatio="false"/>
+                </StackPane>
+
+                <!-- Track info + badge -->
+                <VBox styleClass="np-meta" alignment="CENTER" spacing="4">
+                    <Label fx:id="npTitle"  styleClass="track-title"  text="Nothing playing"/>
+                    <Label fx:id="npArtist" styleClass="track-artist" text="—"/>
+
+                  
+                    <HBox fx:id="statusBadge" styleClass="status-badge status-idle"
+                          alignment="CENTER_LEFT" spacing="6"
+                          maxWidth="-Infinity">
+
+             
+                        <Label fx:id="statusText" styleClass="status-text-label" text="Last played"/>
+                    </HBox>
+                </VBox>
+
+            </VBox>
+
+            <HBox styleClass="divider-full"/>
+
+            <!-- ── Recent Scrobbles ── -->
+            <VBox styleClass="history" spacing="0">
+                <Label text="Recent scrobbles" styleClass="history-label"/>
+                <VBox fx:id="scrobbleList" spacing="0"/>
+            </VBox>
+
+        </VBox>
+    </ScrollPane>
+
+</VBox>
