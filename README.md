@@ -1,31 +1,67 @@
 # Echo Scrobbler
 
-Echo Scrobbler is a desktop music tracking application for Linux. It monitors system media playback via playerctl and synchronizes listening data with the Last.fm platform.
+A minimal Last.fm scrobbler for Linux, built with Java and JavaFX.
 
-## Current Status
-This project is currently in active development. The core scrobbling logic and authentication flow are implemented, but the graphical user interface and advanced features are still being integrated.
-
-## Tech Stack
-* **Language**: Java 21
-* **UI Framework**: JavaFX
-* **Build Tool**: Maven
-* **Environment**: Linux Mint
-* **Dependencies**: Last.fm API, playerctl
-
-## Implementation Progress
-* [x] Basic system media detection via playerctl
-* [x] Authentication token and session key generation
-* [x] Real-time "Now Playing" status updates
-* [x] Scrobble submission logic with time-threshold triggers
-* [ ] Migration to a full MVC architecture
-* [ ] Implementation of the refined UI/UX design
-* [ ] Integration of user discovery and dashboard modules
-
-## Configuration
-To run this project, a `.env` file is required in the root directory with valid Last.fm API credentials:
-- LASTFM_API_KEY
-- LASTFM_SHARED_SECRET
-- LASTFM_SESSION_KEY
+Detects music playing on your system via MPRIS2 and automatically scrobbles to your Last.fm profile — with a clean dark interface showing what's playing and your recent history.
 
 ---
-*Developed as a portfolio project for Software Engineering.*
+
+## Features
+
+- Detects any media player that supports MPRIS2 (Spotify, Firefox, Chromium, VLC, etc.)
+- Automatic scrobbling with correct time threshold logic
+- Real-time "Now Playing" updates on Last.fm
+- Recent scrobbles list with album art
+- One-click access to your Last.fm profile
+- Persistent session — login once, stays authenticated
+
+## Tech Stack
+
+- **Language**: Java 21
+- **UI**: JavaFX
+- **Build**: Maven
+- **Platform**: Linux
+
+## Requirements
+
+- Java 21+
+- Maven
+- [`playerctl`](https://github.com/altdesktop/playerctl)
+
+```bash
+sudo apt install playerctl
+```
+
+## Setup
+
+1. Clone the repo
+
+```bash
+git clone https://github.com/yourusername/echo-scrobbler.git
+cd echo-scrobbler
+```
+
+2. Create a `.env` file in the project root with your Last.fm API credentials:
+
+```
+LASTFM_API_KEY=your_api_key
+LASTFM_SHARED_SECRET=your_shared_secret
+```
+
+Get your credentials at [last.fm/api/account/create](https://www.last.fm/api/account/create).
+
+3. Run
+
+```bash
+mvn javafx:run
+```
+
+On first launch, you'll be prompted to authorize the app via your browser. After that, the session is saved locally and you won't need to log in again.
+
+## Configuration
+
+Sessions are stored at `~/.config/echo-scrobbler/session.json`. Delete this file to log out.
+
+---
+
+*Built for Linux · Java · JavaFX*
