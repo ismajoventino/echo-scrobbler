@@ -11,25 +11,12 @@
       spacing="0"
       fillWidth="true">
 
-    <!-- Top spacer -->
     <VBox VBox.vgrow="ALWAYS"/>
 
-    <!-- Center card -->
     <VBox styleClass="login-card" alignment="CENTER" spacing="0">
 
-        <!-- Logo mark -->
-        <HBox alignment="CENTER" styleClass="logo-mark-wrap">
-            <VBox styleClass="logo-mark" alignment="CENTER">
-                <Label text="◈" styleClass="logo-glyph"/>
-            </VBox>
-        </HBox>
-
         <!-- App name -->
-        <Label text="Echo" styleClass="login-wordmark"/>
-        <Label text="SCROBBLER" styleClass="login-wordmark-sub"/>
-
-        <!-- Tagline -->
-        <Label text="your music, remembered." styleClass="login-tagline"/>
+        <Label text="Echo Scrobbler" styleClass="login-wordmark"/>
 
         <!-- Spacer -->
         <VBox minHeight="32"/>
@@ -47,10 +34,8 @@
 
     </VBox>
 
-    <!-- Bottom spacer -->
     <VBox VBox.vgrow="ALWAYS"/>
 
-    <!-- Footer -->
     <Label text="for linux · built with java" styleClass="login-footer"/>
 
 </VBox>
