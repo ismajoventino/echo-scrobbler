@@ -39,7 +39,7 @@ cd echo-scrobbler
 ```
 2. Run
 ```bash
-mvn javafx:run
+mvn javafx:run &
 ```
 On first launch, you'll be prompted to authorize the app via your browser. After that, the session is saved locally and you won't need to log in again.
 
