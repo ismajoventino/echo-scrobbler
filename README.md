@@ -47,4 +47,4 @@ On first launch, you'll be prompted to authorize the app via your browser. After
 Sessions are stored at `~/.config/echo-scrobbler/session.json`. Delete this file to log out.
 
 ---
-*Built for Linux · Java · JavaFX*
+*Built for Linux · Java · JavaFX* 
