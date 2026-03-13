@@ -119,17 +119,6 @@
 }
 
 /* ─── Status Badge ───────────────────────────── */
-/*
-   JavaFX ignora -fx-border-radius de forma não confiável. A solução
-   certa é simular a borda via -fx-background-color em camadas:
-     camada 0 = cor da borda (raio 999)
-     camada 1 = preenchimento com insets: 1px (raio 999)
-   Nunca usar -fx-border-color pra pill shapes no JavaFX.
-
-   Formato alpha: #AARRGGBB (alpha primeiro).
-     rgba(26,158,117, 0.13) → alpha ≈ 0x21 → #211d9e75
-     rgba(26,158,117, 0.25) → alpha ≈ 0x40 → #401d9e75
-*/
 .status-badge {
     -fx-padding: 6 14 6 10;
     -fx-border-color: transparent;
@@ -143,12 +132,6 @@
 }
 
 .status-scrobbling {
-    /*
-       Se as barras aparecerem azuis, seu JavaFX lê hex como #RRGGBBAA.
-       Use a linha comentada abaixo no lugar:
-         -fx-background-color: #1d9e7540, #1d9e7521;   (formato RRGGBBAA)
-       Se aparecerem corretas (verde), mantenha como está (formato AARRGGBB).
-    */
     -fx-background-color: #1d9e7540, #1d9e7521;
     -fx-background-insets: 0, 1;
     -fx-background-radius: 999, 999;
