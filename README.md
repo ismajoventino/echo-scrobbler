@@ -34,7 +34,7 @@ sudo apt install playerctl
 ## Setup
 1. Clone the repo
 ```bash
-git clone https://github.com/yourusername/echo-scrobbler.git
+git clone https://github.com/ismajoventino/echo-scrobbler.git
 cd echo-scrobbler
 ```
 2. Run
