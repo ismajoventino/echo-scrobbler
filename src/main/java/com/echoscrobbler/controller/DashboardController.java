@@ -59,7 +59,7 @@ public class DashboardController {
      
     }
 
-    // ─── Load ─────────────────────────────────────────────────────────
+    // Load
 
     private void loadAll() {
         scheduler.execute(() -> {
@@ -142,7 +142,7 @@ public class DashboardController {
         }
     }
 
-    // ─── State ────────────────────────────────────────────────────────
+    //State
 
     private void setScrobblingState(boolean scrobbling) {
         if (scrobbling) {
@@ -160,7 +160,7 @@ public class DashboardController {
         }
     }
 
-    // ─── UI Builder ───────────────────────────────────────────────────
+    // UI Builder
 
     private HBox buildScrobbleRow(ScrobbleRecord t) {
         HBox row = new HBox(14);
@@ -205,20 +205,22 @@ public class DashboardController {
         return row;
     }
 
-    // ─── Handlers ─────────────────────────────────────────────────────
+    // Handlers
 
     @FXML
     private void openProfile() {
         String username = authService.getUsername();
         if (username == null || username.isEmpty()) return;
-        try {
-            Desktop.getDesktop().browse(new URI("https://www.last.fm/user/" + username));
-        } catch (Exception e) {
-            System.out.println("Could not open browser: " + e.getMessage());
-        }
+        new Thread(() -> {
+            try {
+                Desktop.getDesktop().browse(new URI("https://www.last.fm/user/" + username));
+            } catch (Exception e) {
+                System.out.println("Could not open browser: " + e.getMessage());
+            }
+        }).start();
     }
 
-    // ─── Helpers ──────────────────────────────────────────────────────
+    // Helpers
 
     private String formatTimestamp(long uts) {
         if (uts <= 0) return "";
