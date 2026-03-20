@@ -1,5 +1,10 @@
 package com.echoscrobbler;
 
+import java.awt.AWTException;
+import java.awt.MenuItem;
+import java.awt.PopupMenu;
+import java.awt.SystemTray;
+import java.awt.TrayIcon;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
@@ -15,6 +20,7 @@ import io.github.cdimascio.dotenv.Dotenv;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.layout.VBox;
@@ -27,6 +33,7 @@ public class App extends Application {
     private Track currentTrack;
     private final ScrobbleTimer scrobbleTimer = new ScrobbleTimer();
     private AuthService authService;
+    private TrayIcon trayIcon;
 
     @Override
     public void start(Stage primaryStage) {
@@ -34,11 +41,65 @@ public class App extends Application {
         authService = new AuthService(dotenv.get("LASTFM_API_KEY"), dotenv.get("LASTFM_SHARED_SECRET"));
         lastFmClient = new LastFmClient(authService.getSessionKey());
 
+        Platform.setImplicitExit(false);
+
+        setupTray(primaryStage);
+
         if (authService.isAuthenticated()) {
             showDashboard(primaryStage);
         } else {
             showLogin(primaryStage);
         }
+    }
+
+    private void setupTray(Stage primaryStage) {
+        if (!SystemTray.isSupported()) {
+            System.out.println("System tray not supported");
+            return;
+        }
+
+        java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(16, 16, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        java.awt.Graphics2D g = image.createGraphics();
+        g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+        g.setColor(java.awt.Color.decode("#e53935"));
+        g.fillOval(1, 1, 14, 14);
+        g.dispose();
+
+        MenuItem openItem = new MenuItem("Abrir Echo Scrobbler");
+        openItem.addActionListener(e -> Platform.runLater(() -> {
+            primaryStage.show();
+            primaryStage.toFront();
+        }));
+
+        MenuItem exitItem = new MenuItem("Sair");
+        exitItem.addActionListener(e -> {
+            SystemTray.getSystemTray().remove(trayIcon);
+            scrobbleTimer.shutdown();
+            Platform.exit();
+        });
+
+        PopupMenu popup = new PopupMenu();
+        popup.add(openItem);
+        popup.addSeparator();
+        popup.add(exitItem);
+
+        trayIcon = new TrayIcon(image, "Echo Scrobbler", popup);
+        trayIcon.setImageAutoSize(true);
+        trayIcon.addActionListener(e -> Platform.runLater(() -> {
+            primaryStage.show();
+            primaryStage.toFront();
+        }));
+
+        try {
+            SystemTray.getSystemTray().add(trayIcon);
+        } catch (AWTException e) {
+            System.out.println("Tray error: " + e.getMessage());
+        }
+
+        primaryStage.setOnCloseRequest(e -> {
+            e.consume();
+            primaryStage.hide();
+        });
     }
 
     private void showLogin(Stage stage) {
@@ -150,6 +211,7 @@ public class App extends Application {
     }
 
     public static void main(String[] args) {
+        System.setProperty("java.awt.headless", "false");
         launch(args);
     }
 }
