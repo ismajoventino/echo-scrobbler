@@ -1,6 +1,21 @@
+# Build output
 target/
+
+# Eclipse
 .settings/
 .project
 .classpath
 .factorypath
+
+# Local environment
 .env
+
+# Local Codex files
+.codex/
+
+# JVM crash logs
+hs_err_pid*.log
+
+# nohup output
+nohup.out
+

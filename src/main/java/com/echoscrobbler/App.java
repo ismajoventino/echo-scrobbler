@@ -126,6 +126,7 @@ public class App extends Application {
             VBox root = loader.load();
 
             Dotenv dotenv = Dotenv.load();
+            lastFmClient = new LastFmClient(authService.getSessionKey());
             LastFmService lastFmService = new LastFmService(
                 dotenv.get("LASTFM_API_KEY"),
                 authService.getSessionKey(),
