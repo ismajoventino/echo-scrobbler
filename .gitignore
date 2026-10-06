@@ -19,3 +19,4 @@ hs_err_pid*.log
 # nohup output
 nohup.out
 
+dependency-reduced-pom.xml
