@@ -9,44 +9,127 @@ import com.echoscrobbler.model.Track;
 
 public class ScrobbleTimer {
 
-    private static final long MIN_SECONDS = 90;
-    private static final long MAX_SECONDS = 4 * 60;
-
-    // percentage: value between 0.3 and 1.0
-    private double percentage = 0.5;
+    private static final long MAX_SECONDS = 240;
+    private static final long UNKNOWN_DURATION_SECONDS = 90;
 
     private final ScheduledExecutorService scheduler =
-        Executors.newSingleThreadScheduledExecutor();
-    private ScheduledFuture<?> pending;
+        Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread thread = new Thread(r, "echo-scrobble-timer");
+            thread.setDaemon(true);
+            return thread;
+        });
 
-    public void setPercentage(double percentage) {
-        this.percentage = Math.max(0.3, Math.min(1.0, percentage));
+    private ScheduledFuture<?> pending;
+    private Runnable callback;
+
+    private long remainingNanos;
+    private long resumedAtNanos;
+    private long generation;
+
+    private boolean running;
+    private boolean completed;
+    private double percentage = 0.5;
+
+    public synchronized void setPercentage(double percentage) {
+        if (!Double.isFinite(percentage)) {
+            throw new IllegalArgumentException("Invalid percentage");
+        }
+
+        this.percentage = Math.max(0.5, Math.min(1.0, percentage));
     }
 
-    public void start(Track track, Runnable onScrobble) {
+    public synchronized void start(Track track, Runnable onScrobble) {
         cancel();
 
-        long threshold;
+        long duration = track.getDurationSeconds();
 
-        if (track.getDurationSeconds() > 0) {
-            long calculated = (long)(track.getDurationSeconds() * percentage);
-            threshold = Math.max(MIN_SECONDS, Math.min(calculated, MAX_SECONDS));
-        } else {
-            threshold = MIN_SECONDS;
+        // last.fm excludes tracks lasting 30 seconds or less.
+        if (duration > 0 && duration <= 30) {
+            return;
         }
 
+        long threshold = duration > 0
+            ? Math.min((long) Math.ceil(duration * percentage), MAX_SECONDS)
+            : UNKNOWN_DURATION_SECONDS;
 
-        System.out.println("ScrobbleTimer started, threshold: " + threshold + "s");
-        pending = scheduler.schedule(onScrobble, threshold, TimeUnit.SECONDS);
+        callback = onScrobble;
+        remainingNanos = TimeUnit.SECONDS.toNanos(threshold);
+        completed = false;
+
+        System.out.println("Scrobble threshold: " + threshold + "s");
+        resume();
     }
 
-    public void cancel() {
-        if (pending != null && !pending.isDone()) {
+    public synchronized void pause() {
+        if (!running) {
+            return;
+        }
+
+        long elapsed = System.nanoTime() - resumedAtNanos;
+        remainingNanos = Math.max(0, remainingNanos - elapsed);
+
+        running = false;
+        generation++;
+
+        if (pending != null) {
             pending.cancel(false);
+            pending = null;
         }
     }
 
-    public void shutdown() {
+    public synchronized void resume() {
+        if (running || completed || callback == null) {
+            return;
+        }
+
+        running = true;
+        resumedAtNanos = System.nanoTime();
+        long token = ++generation;
+
+        pending = scheduler.schedule(
+            () -> finish(token),
+            remainingNanos,
+            TimeUnit.NANOSECONDS
+        );
+    }
+
+    private void finish(long token) {
+        Runnable action;
+
+        synchronized (this) {
+            if (token != generation || !running || completed) {
+                return;
+            }
+
+            running = false;
+            completed = true;
+            remainingNanos = 0;
+            pending = null;
+
+            action = callback;
+            callback = null;
+        }
+
+        // execute outside the lock so network work cannot block pause/cancel.
+        action.run();
+    }
+
+    public synchronized void cancel() {
+        generation++;
+
+        if (pending != null) {
+            pending.cancel(false);
+            pending = null;
+        }
+
+        callback = null;
+        remainingNanos = 0;
+        running = false;
+        completed = false;
+    }
+
+    public synchronized void shutdown() {
+        cancel();
         scheduler.shutdownNow();
     }
 }
